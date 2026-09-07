@@ -1,0 +1,6 @@
+{
+  "name": "Alkitab Digital & Catatan",
+  "description": "Aplikasi Alkitab Digital Bahasa Indonesia lengkap dengan audio pembacaan, renungan harian, kuis Alkitab edukatif interaktif, kisah & kesaksian rohani, serta penyimpanan catatan pribadi.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
