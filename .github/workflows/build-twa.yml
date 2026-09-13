@@ -98,6 +98,14 @@ jobs:
               fs.writeFileSync('twa-manifest.json', JSON.stringify(manifest, null, 2));
             "
           fi
+          # Sinkronkan manifest-checksum.txt setelah perubahan
+          node -e "
+            const crypto = require('crypto');
+            const fs = require('fs');
+            const sum = crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex');
+            fs.writeFileSync('manifest-checksum.txt', sum);
+            console.log('SHA1 Checksum:', sum);
+          "
           cat twa-manifest.json | grep -E 'appVersion|packageId'
 
       - name: Build Android App (AAB & APK)
@@ -108,10 +116,25 @@ jobs:
           # Buat direktori output
           mkdir -p output
 
-          # Jalankan build Bubblewrap
-          bubblewrap build --skipPwaValidation
+          # 1. Pastikan manifest-checksum.txt ada dan akurat
+          node -e "
+            const crypto = require('crypto');
+            const fs = require('fs');
+            const sum = crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex');
+            fs.writeFileSync('manifest-checksum.txt', sum);
+            console.log('Manifest checksum siap:', sum);
+          "
 
-          # Kumpulkan hasil build .aab dan .apk
+          # 2. Generate/Update struktur proyek Android TWA secara non-interaktif
+          yes | bubblewrap update --skipVersionUpgrade || true
+
+          # 3. Beri izin eksekusi gradlew jika dibuat
+          chmod +x ./gradlew 2>/dev/null || true
+
+          # 4. Jalankan build AAB dan APK secara non-interaktif
+          yes | bubblewrap build --skipPwaValidation
+
+          # 5. Kumpulkan hasil build .aab dan .apk
           find . -name "*.aab" -exec cp {} output/ \;
           find . -name "*.apk" -exec cp {} output/ \;
           cp public/.well-known/assetlinks.json output/ || true
