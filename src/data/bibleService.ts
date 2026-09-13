@@ -1,6 +1,8 @@
 import { Bookmark, Highlight, Note, ReadingSettings, Verse, Book, UserPersonalTestimony } from '../types';
 import { BIBLE_BOOKS } from './books';
 import { AUTHENTIC_PASSAGES, getVersesForChapter } from './bibleVerses';
+import { SupabaseService, isSupabaseConnected } from '../lib/supabase';
+import { AuthService } from './authService';
 
 const STORAGE_KEYS = {
   SETTINGS: 'alkitab_settings_v1',
@@ -149,13 +151,18 @@ export const BibleService = {
   toggleBookmark(verse: Verse): boolean {
     const list = this.getBookmarks();
     const existingIndex = list.findIndex(b => b.bookId === verse.bookId && b.chapter === verse.chapter && b.verse === verse.verse);
+    const user = AuthService.getCurrentUser();
+    const userId = user?.id || 'guest_user';
     
     if (existingIndex >= 0) {
-      list.splice(existingIndex, 1);
+      const removed = list.splice(existingIndex, 1)[0];
       localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(list));
+      if (isSupabaseConnected()) {
+        SupabaseService.deleteBookmark(removed.id, userId).catch(console.error);
+      }
       return false; // Removed
     } else {
-      list.unshift({
+      const newBm: Bookmark = {
         id: verse.id,
         bookId: verse.bookId,
         bookName: verse.bookName,
@@ -163,8 +170,12 @@ export const BibleService = {
         verse: verse.verse,
         text: verse.text,
         createdAt: Date.now(),
-      });
+      };
+      list.unshift(newBm);
       localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(list));
+      if (isSupabaseConnected()) {
+        SupabaseService.saveBookmark(newBm, userId).catch(console.error);
+      }
       return true; // Added
     }
   },
@@ -177,6 +188,11 @@ export const BibleService = {
   deleteBookmark(id: string): void {
     const list = this.getBookmarks().filter(b => b.id !== id);
     localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(list));
+    if (isSupabaseConnected()) {
+      const user = AuthService.getCurrentUser();
+      const userId = user?.id || 'guest_user';
+      SupabaseService.deleteBookmark(id, userId).catch(console.error);
+    }
   },
 
   // --- HIGHLIGHTS ---
@@ -193,9 +209,11 @@ export const BibleService = {
   setHighlight(verse: Verse, color: Highlight['color'] | null): void {
     let list = this.getHighlights();
     list = list.filter(h => !(h.bookId === verse.bookId && h.chapter === verse.chapter && h.verse === verse.verse));
+    const user = AuthService.getCurrentUser();
+    const userId = user?.id || 'guest_user';
 
     if (color) {
-      list.unshift({
+      const newHl: Highlight = {
         id: verse.id,
         bookId: verse.bookId,
         bookName: verse.bookName,
@@ -204,7 +222,15 @@ export const BibleService = {
         text: verse.text,
         color,
         createdAt: Date.now(),
-      });
+      };
+      list.unshift(newHl);
+      if (isSupabaseConnected()) {
+        SupabaseService.saveHighlight(newHl, userId).catch(console.error);
+      }
+    } else {
+      if (isSupabaseConnected()) {
+        SupabaseService.deleteHighlight(verse.id, userId).catch(console.error);
+      }
     }
     localStorage.setItem(STORAGE_KEYS.HIGHLIGHTS, JSON.stringify(list));
   },
@@ -259,12 +285,24 @@ export const BibleService = {
     }
 
     localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(list));
+
+    if (isSupabaseConnected()) {
+      const user = AuthService.getCurrentUser();
+      const userId = user?.id || 'guest_user';
+      SupabaseService.saveNote(savedNote, userId).catch(console.error);
+    }
+
     return savedNote;
   },
 
   deleteNote(id: string): void {
     const list = this.getNotes().filter(n => n.id !== id);
     localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(list));
+    if (isSupabaseConnected()) {
+      const user = AuthService.getCurrentUser();
+      const userId = user?.id || 'guest_user';
+      SupabaseService.deleteNote(id, userId).catch(console.error);
+    }
   },
 
   getNotesForVerse(bookId: string, chapter: number, verse: number): Note[] {
@@ -305,11 +343,95 @@ export const BibleService = {
       list.unshift(testimony);
     }
     localStorage.setItem(STORAGE_KEYS.TESTIMONIES, JSON.stringify(list));
+
+    if (isSupabaseConnected()) {
+      SupabaseService.saveTestimony(testimony).catch(console.error);
+    }
   },
 
   deleteTestimony(id: string): void {
     const list = this.getTestimonies().filter(t => t.id !== id);
     localStorage.setItem(STORAGE_KEYS.TESTIMONIES, JSON.stringify(list));
+  },
+
+  // Sync helper between LocalStorage and Supabase
+  async syncAllWithSupabase(userId: string): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConnected()) {
+      return { success: false, message: 'Supabase belum dikonfigurasi.' };
+    }
+
+    try {
+      const [remoteNotes, remoteBookmarks, remoteHighlights, remoteTestimonies] = await Promise.all([
+        SupabaseService.fetchNotes(userId),
+        SupabaseService.fetchBookmarks(userId),
+        SupabaseService.fetchHighlights(userId),
+        SupabaseService.fetchTestimonies(),
+      ]);
+
+      let syncCount = 0;
+
+      // Merge notes
+      if (remoteNotes && remoteNotes.length > 0) {
+        const local = this.getNotes();
+        const merged = [...local];
+        for (const rn of remoteNotes) {
+          const idx = merged.findIndex(n => n.id === rn.id);
+          if (idx >= 0) {
+            if (rn.updatedAt > merged[idx].updatedAt) {
+              merged[idx] = rn;
+            }
+          } else {
+            merged.push(rn);
+          }
+        }
+        localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(merged));
+        syncCount += remoteNotes.length;
+      }
+
+      // Merge bookmarks
+      if (remoteBookmarks && remoteBookmarks.length > 0) {
+        const local = this.getBookmarks();
+        const merged = [...local];
+        for (const rbm of remoteBookmarks) {
+          if (!merged.some(b => b.id === rbm.id)) {
+            merged.push(rbm);
+          }
+        }
+        localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(merged));
+        syncCount += remoteBookmarks.length;
+      }
+
+      // Merge highlights
+      if (remoteHighlights && remoteHighlights.length > 0) {
+        const local = this.getHighlights();
+        const merged = [...local];
+        for (const rhl of remoteHighlights) {
+          if (!merged.some(h => h.id === rhl.id)) {
+            merged.push(rhl);
+          }
+        }
+        localStorage.setItem(STORAGE_KEYS.HIGHLIGHTS, JSON.stringify(merged));
+        syncCount += remoteHighlights.length;
+      }
+
+      // Also push local items up to Supabase to guarantee 2-way sync
+      const currentNotes = this.getNotes();
+      for (const n of currentNotes) {
+        await SupabaseService.saveNote(n, userId);
+      }
+      const currentBms = this.getBookmarks();
+      for (const b of currentBms) {
+        await SupabaseService.saveBookmark(b, userId);
+      }
+      const currentHls = this.getHighlights();
+      for (const h of currentHls) {
+        await SupabaseService.saveHighlight(h, userId);
+      }
+
+      return { success: true, message: `Sinkronisasi berhasil! Data terhubung dengan aman di Supabase.` };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Gagal sinkronisasi data ke Supabase.' };
+    }
   },
 
   // --- SEARCH ENGINE ---

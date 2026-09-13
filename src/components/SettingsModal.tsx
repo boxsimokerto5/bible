@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Type, Sun, Moon, Coffee, Eye, Minus, Plus, AlignLeft, Check, Sparkles, User, ShieldCheck, Download } from 'lucide-react';
+import { X, Type, Sun, Moon, Coffee, Eye, Minus, Plus, AlignLeft, Check, Sparkles, User, ShieldCheck, Download, Database } from 'lucide-react';
 import { ReadingSettings, ThemeMode, FontFamilyType, LineHeightType, UserProfile } from '../types';
+import { isSupabaseConnected } from '../lib/supabase';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SettingsModalProps {
   onOpenProfile?: () => void;
   onOpenAuth?: () => void;
   onShowPostSplashAuth?: () => void;
+  onOpenSupabase?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -24,6 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenProfile,
   onOpenAuth,
   onShowPostSplashAuth,
+  onOpenSupabase,
 }) => {
   if (!isOpen) return null;
 
@@ -286,6 +289,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600/15 text-amber-700 dark:text-amber-300 shrink-0">
                 {currentUser ? 'Buka' : 'Masuk'}
+              </span>
+            </button>
+          </div>
+
+          {/* 6.5. Supabase Cloud Database Tile */}
+          <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenSupabase) onOpenSupabase();
+              }}
+              className="w-full p-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/35 border border-emerald-500/30 text-left flex items-center justify-between transition-all active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                    <span>Database Supabase</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      isSupabaseConnected()
+                        ? 'bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200'
+                        : 'bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200'
+                    }`}>
+                      {isSupabaseConnected() ? '● Terhubung' : '○ Konfigurasi'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Sinkronisasi cloud PostgreSQL, skrip tabel SQL & pencadangan
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 shrink-0">
+                Kelola
               </span>
             </button>
           </div>

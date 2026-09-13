@@ -28,6 +28,8 @@ import { NoteEditorModal } from './components/NoteEditorModal';
 import { AudioPlayerBar } from './components/AudioPlayerBar';
 import { SplashScreen } from './components/SplashScreen';
 import { PostSplashAuthScreen } from './components/PostSplashAuthScreen';
+import { SupabaseModal } from './components/SupabaseModal';
+import { isSupabaseConnected } from './lib/supabase';
 
 export default function App() {
   // Splash Screen & Post-Splash Auth Screen States
@@ -55,6 +57,7 @@ export default function App() {
   // Modal & Drawer States
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [selectedVerse, setSelectedVerse] = useState<Verse | null>(null);
   const [isActionDrawerOpen, setIsActionDrawerOpen] = useState(false);
   const [isNoteEditorOpen, setIsNoteEditorOpen] = useState(false);
@@ -74,6 +77,21 @@ export default function App() {
   const [speakingVerseId, setSpeakingVerseId] = useState<string | null>(null);
   const audioQueueRef = useRef<Verse[]>([]);
   const isAudioActiveRef = useRef(false);
+
+  // Background sync with Supabase on startup
+  useEffect(() => {
+    if (isSupabaseConnected()) {
+      const user = AuthService.getCurrentUser();
+      const userId = user?.id || 'guest_user';
+      BibleService.syncAllWithSupabase(userId)
+        .then((res) => {
+          if (res.success) {
+            refreshAllData();
+          }
+        })
+        .catch(console.error);
+    }
+  }, []);
 
   // Initialize and load last read
   useEffect(() => {
@@ -601,6 +619,7 @@ export default function App() {
         }}
         onExportAllData={handleExportAllData}
         onImportData={handleImportData}
+        onOpenSupabase={() => setIsSupabaseModalOpen(true)}
       />
       <BookChapterModal
         isOpen={isBookModalOpen}
@@ -624,6 +643,15 @@ export default function App() {
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onShowPostSplashAuth={() => setShowPostSplashAuth(true)}
+        onOpenSupabase={() => setIsSupabaseModalOpen(true)}
+      />
+
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => {
+          setIsSupabaseModalOpen(false);
+          refreshAllData();
+        }}
       />
 
       <VerseActionDrawer

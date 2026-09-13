@@ -18,6 +18,7 @@ interface UserProfileModalProps {
   };
   onExportAllData: () => void;
   onImportData: (file: File) => void;
+  onOpenSupabase?: () => void;
 }
 
 const AVATAR_OPTIONS = ['🕊️', '✝️', '⭐', '🌿', '📖', '👑', '🕯️', '🍞', '🌈', '⛪'];
@@ -32,6 +33,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   stats,
   onExportAllData,
   onImportData,
+  onOpenSupabase,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
