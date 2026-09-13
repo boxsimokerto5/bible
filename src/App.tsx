@@ -263,6 +263,7 @@ export default function App() {
       highlights: BibleService.getHighlights(),
       testimonies: BibleService.getTestimonies(),
       settings: BibleService.getSettings(),
+      readingHistory: BibleService.getReadingHistory(),
     };
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -285,6 +286,7 @@ export default function App() {
         if (parsed.highlights) localStorage.setItem('alkitab_highlights_v1', JSON.stringify(parsed.highlights));
         if (parsed.testimonies) localStorage.setItem('alkitab_testimonies_v1', JSON.stringify(parsed.testimonies));
         if (parsed.settings) localStorage.setItem('alkitab_settings_v1', JSON.stringify(parsed.settings));
+        if (parsed.readingHistory) localStorage.setItem('alkitab_reading_history_v1', JSON.stringify(parsed.readingHistory));
         refreshAllData();
       } catch {
         alert('Gagal memulihkan file cadangan. Pastikan format file benar (.json).');
@@ -620,6 +622,13 @@ export default function App() {
         onExportAllData={handleExportAllData}
         onImportData={handleImportData}
         onOpenSupabase={() => setIsSupabaseModalOpen(true)}
+        onSelectChapter={(bId, ch) => {
+          setCurrentBookId(bId);
+          setCurrentChapter(ch);
+          setActiveTab('read');
+          setIsProfileModalOpen(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
       <BookChapterModal
         isOpen={isBookModalOpen}

@@ -124,3 +124,14 @@ export interface UserPersonalTestimony {
 
 export type TabType = 'read' | 'search' | 'bookmarks' | 'notes' | 'devotional' | 'stories';
 
+export interface ReadingHistoryItem {
+  id: string; // e.g. "yoh-3"
+  bookId: string;
+  bookName: string;
+  shortName?: string;
+  chapter: number;
+  testament: Testament;
+  category?: string;
+  visitedAt: number;
+}
+

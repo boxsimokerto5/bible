@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
-import { X, User, Edit3, Heart, Download, Upload, LogOut, Sparkles, BookOpen, Bookmark, FileText, Check, ShieldCheck, AlertCircle } from 'lucide-react';
-import { UserProfile } from '../types';
+import React, { useState, useEffect } from 'react';
+import { 
+  X, User, Edit3, Heart, Download, Upload, LogOut, 
+  Sparkles, BookOpen, Bookmark, FileText, Check, 
+  ShieldCheck, AlertCircle, History, Clock, ChevronRight, Trash2 
+} from 'lucide-react';
+import { UserProfile, ReadingHistoryItem } from '../types';
 import { AuthService } from '../data/authService';
+import { BibleService } from '../data/bibleService';
 
 interface UserProfileModalProps {
   user: UserProfile | null;
@@ -19,9 +24,23 @@ interface UserProfileModalProps {
   onExportAllData: () => void;
   onImportData: (file: File) => void;
   onOpenSupabase?: () => void;
+  onSelectChapter?: (bookId: string, chapter: number) => void;
 }
 
 const AVATAR_OPTIONS = ['🕊️', '✝️', '⭐', '🌿', '📖', '👑', '🕯️', '🍞', '🌈', '⛪'];
+
+const formatTimeAgo = (timestamp: number): string => {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.floor(diff / (1000 * 60));
+  if (minutes < 1) return 'Baru saja';
+  if (minutes < 60) return `${minutes} mnt lalu`;
+  const hours = Math.floor(minutes / (1000 * 60 * 60));
+  if (hours < 24) return `${hours} jam lalu`;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 1) return 'Kemarin';
+  if (days < 7) return `${days} hari lalu`;
+  return new Date(timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+};
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   user,
@@ -34,6 +53,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onExportAllData,
   onImportData,
   onOpenSupabase,
+  onSelectChapter,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -41,6 +61,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [favoriteVerse, setFavoriteVerse] = useState(user?.favoriteVerse || '');
   const [churchOrCity, setChurchOrCity] = useState(user?.churchOrCity || '');
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [readingHistory, setReadingHistory] = useState<ReadingHistoryItem[]>(() => BibleService.getReadingHistory());
+
+  useEffect(() => {
+    if (isOpen) {
+      setReadingHistory(BibleService.getReadingHistory());
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -100,6 +127,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setImportStatus('Data berhasil dipulihkan!');
       setTimeout(() => setImportStatus(null), 3000);
     }
+  };
+
+  const handleOpenChapter = (bookId: string, chapter: number) => {
+    if (onSelectChapter) {
+      onSelectChapter(bookId, chapter);
+    }
+    onClose();
+  };
+
+  const handleDeleteHistoryItem = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const updated = BibleService.deleteReadingHistoryItem(id);
+    setReadingHistory(updated);
+  };
+
+  const handleClearHistory = () => {
+    BibleService.clearReadingHistory();
+    setReadingHistory([]);
   };
 
   return (
@@ -267,6 +312,95 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
             </div>
           )}
+
+          {/* Riwayat Bacaan (10 Pasal Terakhir) Section */}
+          <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/80 dark:border-neutral-700 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                  Riwayat Bacaan
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
+                  {readingHistory.length} dari 10
+                </span>
+              </div>
+              {readingHistory.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  className="text-[11px] font-semibold text-neutral-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 transition-colors px-1 py-0.5 rounded"
+                  title="Hapus seluruh riwayat bacaan"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Bersihkan</span>
+                </button>
+              )}
+            </div>
+
+            {readingHistory.length === 0 ? (
+              <div className="py-4 text-center text-neutral-400 space-y-1">
+                <Clock className="w-6 h-6 mx-auto opacity-40 mb-1" />
+                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                  Belum ada riwayat bacaan
+                </p>
+                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 max-w-xs mx-auto">
+                  Pasal yang Anda buka saat membaca Alkitab akan tersimpan di sini secara otomatis untuk akses cepat.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-0.5">
+                {readingHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => handleOpenChapter(item.bookId, item.chapter)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleOpenChapter(item.bookId, item.chapter);
+                      }
+                    }}
+                    className="group relative flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700 hover:border-amber-400 dark:hover:border-amber-500/60 hover:shadow-xs active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
+                        item.testament === 'PB'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                          : 'bg-stone-200 dark:bg-stone-700/80 text-stone-700 dark:text-stone-300'
+                      }`}>
+                        {item.testament}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-serif-bible font-bold text-neutral-900 dark:text-neutral-100 text-xs truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          {item.bookName} {item.chapter}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 dark:text-neutral-500 truncate">
+                          {item.category && <span>{item.category}</span>}
+                          <span>•</span>
+                          <span>{formatTimeAgo(item.visitedAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 ml-1">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteHistoryItem(e, item.id)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-rose-600 hover:bg-neutral-100 dark:hover:bg-neutral-700 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all"
+                        title="Hapus dari riwayat"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center text-neutral-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all">
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Spiritual Activity Stats Grid */}
           <div>

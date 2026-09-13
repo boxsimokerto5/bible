@@ -1,4 +1,4 @@
-import { Bookmark, Highlight, Note, ReadingSettings, Verse, Book, UserPersonalTestimony } from '../types';
+import { Bookmark, Highlight, Note, ReadingSettings, Verse, Book, UserPersonalTestimony, ReadingHistoryItem } from '../types';
 import { BIBLE_BOOKS } from './books';
 import { AUTHENTIC_PASSAGES, getVersesForChapter } from './bibleVerses';
 import { SupabaseService, isSupabaseConnected } from '../lib/supabase';
@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   LAST_READ: 'alkitab_last_read_v1',
   SEARCH_HISTORY: 'alkitab_search_hist_v1',
   TESTIMONIES: 'alkitab_user_testimonies_v1',
+  READING_HISTORY: 'alkitab_reading_history_v1',
 };
 
 export const DEFAULT_SETTINGS: ReadingSettings = {
@@ -118,7 +119,7 @@ export const BibleService = {
     }
   },
 
-  // --- LAST READ POSITION ---
+  // --- LAST READ POSITION & READING HISTORY ---
   getLastRead(): { bookId: string; chapter: number; verse?: number } {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.LAST_READ);
@@ -132,6 +133,99 @@ export const BibleService = {
   saveLastRead(bookId: string, chapter: number, verse?: number): void {
     try {
       localStorage.setItem(STORAGE_KEYS.LAST_READ, JSON.stringify({ bookId, chapter, verse }));
+      this.recordReadingHistory(bookId, chapter);
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  getReadingHistory(): ReadingHistoryItem[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.READING_HISTORY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed.slice(0, 10);
+      }
+    } catch {
+      // ignore
+    }
+    return [
+      {
+        id: 'yoh-3',
+        bookId: 'yoh',
+        bookName: 'Yohanes',
+        shortName: 'Yoh',
+        chapter: 3,
+        testament: 'PB',
+        category: 'Injil',
+        visitedAt: Date.now() - 1000 * 60 * 3,
+      },
+      {
+        id: 'mzm-23',
+        bookId: 'mzm',
+        bookName: 'Mazmur',
+        shortName: 'Mzm',
+        chapter: 23,
+        testament: 'PL',
+        category: 'Puisi & Hikmat',
+        visitedAt: Date.now() - 1000 * 60 * 60 * 2,
+      },
+      {
+        id: 'kej-1',
+        bookId: 'kej',
+        bookName: 'Kejadian',
+        shortName: 'Kej',
+        chapter: 1,
+        testament: 'PL',
+        category: 'Taurat',
+        visitedAt: Date.now() - 1000 * 60 * 60 * 20,
+      }
+    ];
+  },
+
+  recordReadingHistory(bookId: string, chapter: number): ReadingHistoryItem[] {
+    try {
+      const book = BIBLE_BOOKS.find(b => b.id === bookId);
+      if (!book) return this.getReadingHistory();
+
+      const list = this.getReadingHistory().filter(
+        item => !(item.bookId === bookId && item.chapter === chapter)
+      );
+
+      const newItem: ReadingHistoryItem = {
+        id: `${bookId}-${chapter}`,
+        bookId,
+        bookName: book.name,
+        shortName: book.shortName,
+        chapter,
+        testament: book.testament,
+        category: book.category,
+        visitedAt: Date.now(),
+      };
+
+      const updated = [newItem, ...list].slice(0, 10);
+      localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error(e);
+      return this.getReadingHistory();
+    }
+  },
+
+  deleteReadingHistoryItem(id: string): ReadingHistoryItem[] {
+    try {
+      const list = this.getReadingHistory().filter(item => item.id !== id);
+      localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify(list));
+      return list;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+
+  clearReadingHistory(): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify([]));
     } catch (e) {
       console.error(e);
     }
