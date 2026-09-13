@@ -1,0 +1,44 @@
+{
+  "packageId": "com.alkitab.digital",
+  "host": "bible-hsgjshsjjshsh.pages.dev",
+  "name": "Alkitab Digital",
+  "launcherName": "Alkitab",
+  "themeColor": "#B45309",
+  "themeColorDark": "#171717",
+  "navigationColor": "#FAF8F5",
+  "navigationColorDark": "#0A0A0A",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#FAF8F5",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://bible-hsgjshsjjshsh.pages.dev/icon-512.png",
+  "maskableIconUrl": "https://bible-hsgjshsjjshsh.pages.dev/maskable-icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./release.keystore",
+    "alias": "androidreleasekey"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://bible-hsgjshsjjshsh.pages.dev/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://bible-hsgjshsjjshsh.pages.dev/",
+  "minSdkVersion": 21
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.alkitab.digital",
+      "sha256_cert_fingerprints": [
+        "3F:33:EC:CB:DB:9F:8D:9E:2B:F9:88:58:8E:09:39:09:A3:FC:81:F2:2F:7F:CF:46:6D:5A:C4:7B:C7:D4:0C:A0"
+      ]
+    }
+  }
+]
