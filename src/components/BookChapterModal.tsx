@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Search, ChevronRight, BookOpen } from 'lucide-react';
-import { Book, Testament } from '../types';
-import { BIBLE_BOOKS } from '../data/books';
+import { X, Search, BookOpen } from 'lucide-react';
+import { Book, Testament, Language } from '../types';
+import { BIBLE_BOOKS, getBookName, getBookCategory } from '../data/books';
 
 interface BookChapterModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface BookChapterModalProps {
   currentBookId: string;
   currentChapter: number;
   onSelect: (bookId: string, chapter: number) => void;
+  language?: Language;
 }
 
 export const BookChapterModal: React.FC<BookChapterModalProps> = ({
@@ -17,6 +18,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
   currentBookId,
   currentChapter,
   onSelect,
+  language = 'id',
 }) => {
   const [activeTestament, setActiveTestament] = useState<Testament>('PB');
   const [selectedBook, setSelectedBook] = useState<Book | null>(() => {
@@ -26,17 +28,29 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isEn = language === 'en';
+  const query = searchQuery.trim().toLowerCase();
+
   const filteredBooks = BIBLE_BOOKS.filter(book => {
     const matchesTestament = book.testament === activeTestament;
-    const matchesSearch = searchQuery.trim() === '' || 
-      book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.shortName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return searchQuery.trim() !== '' ? matchesSearch : matchesTestament;
+    if (!query) return matchesTestament;
+
+    const nameId = book.name.toLowerCase();
+    const shortId = book.shortName.toLowerCase();
+    const nameEn = (book.nameEn || '').toLowerCase();
+    const shortEn = (book.shortNameEn || '').toLowerCase();
+    const catId = book.category.toLowerCase();
+    const catEn = (book.categoryEn || '').toLowerCase();
+
+    return nameId.includes(query) ||
+           shortId.includes(query) ||
+           nameEn.includes(query) ||
+           shortEn.includes(query) ||
+           catId.includes(query) ||
+           catEn.includes(query);
   });
 
-  const categories = Array.from(new Set(filteredBooks.map(b => b.category)));
+  const categories = Array.from(new Set(filteredBooks.map(b => getBookCategory(b, language))));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
@@ -52,10 +66,12 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                Pilih Kitab & Pasal
+                {isEn ? 'Select Book & Chapter' : 'Pilih Kitab & Pasal'}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {selectedBook ? `${selectedBook.name} (${selectedBook.chaptersCount} Pasal)` : 'Pilih kitab'}
+                {selectedBook 
+                  ? `${getBookName(selectedBook, language)} (${selectedBook.chaptersCount} ${isEn ? 'Chapters' : 'Pasal'})` 
+                  : (isEn ? 'Select a book' : 'Pilih kitab')}
               </p>
             </div>
           </div>
@@ -75,7 +91,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
             <input
               id="search-book-input"
               type="text"
-              placeholder="Ketik nama kitab (cth: Yohanes, Mazmur, Roma)..."
+              placeholder={isEn ? "Search book (e.g. John, Genesis, Psalms, Romans)..." : "Ketik nama kitab (cth: Yohanes, Mazmur, Roma)..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-neutral-100 dark:bg-neutral-800/80 rounded-xl text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -85,7 +101,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
               >
-                Hapus
+                {isEn ? 'Clear' : 'Hapus'}
               </button>
             )}
           </div>
@@ -107,7 +123,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                   : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               }`}
             >
-              Perjanjian Baru (27)
+              {isEn ? 'New Testament (27)' : 'Perjanjian Baru (27)'}
             </button>
             <button
               id="tab-perjanjian-lama"
@@ -122,7 +138,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                   : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               }`}
             >
-              Perjanjian Lama (39)
+              {isEn ? 'Old Testament (39)' : 'Perjanjian Lama (39)'}
             </button>
           </div>
         )}
@@ -137,9 +153,10 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                   {category}
                 </div>
                 {filteredBooks
-                  .filter(b => b.category === category)
+                  .filter(b => getBookCategory(b, language) === category)
                   .map(book => {
                     const isSelected = selectedBook?.id === book.id;
+                    const displayName = getBookName(book, language);
                     return (
                       <button
                         key={book.id}
@@ -151,7 +168,7 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                             : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                         }`}
                       >
-                        <span className="truncate">{book.name}</span>
+                        <span className="truncate">{displayName}</span>
                         <span className={`text-xs ml-1 ${isSelected ? 'text-amber-100' : 'text-neutral-400'}`}>
                           {book.chaptersCount}
                         </span>
@@ -169,14 +186,14 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-neutral-200/70 dark:border-neutral-800">
                   <div>
                     <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-base">
-                      {selectedBook.name}
+                      {getBookName(selectedBook, language)}
                     </h3>
                     <p className="text-xs text-neutral-500">
-                      Pilih nomor pasal (1 - {selectedBook.chaptersCount})
+                      {isEn ? `Choose chapter (1 - ${selectedBook.chaptersCount})` : `Pilih nomor pasal (1 - ${selectedBook.chaptersCount})`}
                     </p>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-                    {selectedBook.category}
+                    {getBookCategory(selectedBook, language)}
                   </span>
                 </div>
 
@@ -206,20 +223,20 @@ export const BookChapterModal: React.FC<BookChapterModalProps> = ({
               </div>
             ) : (
               <div className="h-full flex items-center justify-center text-neutral-400 text-sm">
-                Pilih kitab di sebelah kiri
+                {isEn ? 'Select a book on the left' : 'Pilih kitab di sebelah kiri'}
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer info for elderly clarity */}
+        {/* Footer info for clarity */}
         <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-          <span>Sentuh angka pasal untuk langsung membuka ayat</span>
+          <span>{isEn ? 'Tap chapter number to open verses directly' : 'Sentuh angka pasal untuk langsung membuka ayat'}</span>
           <button
             onClick={onClose}
             className="font-semibold text-amber-600 dark:text-amber-400 hover:underline"
           >
-            Tutup
+            {isEn ? 'Close' : 'Tutup'}
           </button>
         </div>
       </div>

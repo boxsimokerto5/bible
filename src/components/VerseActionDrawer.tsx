@@ -3,7 +3,8 @@ import {
   X, Bookmark as BookmarkIcon, Highlighter, 
   FileText, Volume2, Copy, Share2, Check, Sparkles 
 } from 'lucide-react';
-import { Verse, HighlightColor } from '../types';
+import { Verse, HighlightColor, Language } from '../types';
+import { getBookNameById } from '../data/books';
 
 interface VerseActionDrawerProps {
   verse: Verse | null;
@@ -15,6 +16,7 @@ interface VerseActionDrawerProps {
   onSetHighlight: (color: HighlightColor | null) => void;
   onOpenNoteEditor: () => void;
   onPlayAudio: () => void;
+  language?: Language;
 }
 
 export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
@@ -27,13 +29,19 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
   onSetHighlight,
   onOpenNoteEditor,
   onPlayAudio,
+  language = 'id',
 }) => {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !verse) return null;
 
+  const isEn = language === 'en';
+  const bookDisplayName = getBookNameById(verse.bookId, language) || verse.bookName;
+  const verseText = isEn && verse.textEn ? verse.textEn : verse.text;
+  const translationTag = isEn ? 'KJV' : 'TB';
+
   const handleCopy = () => {
-    const textToCopy = `"${verse.text}"\n— ${verse.bookName} ${verse.chapter}:${verse.verse} (TB)`;
+    const textToCopy = `"${verseText}"\n— ${bookDisplayName} ${verse.chapter}:${verse.verse} (${translationTag})`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -41,8 +49,8 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
 
   const handleShare = () => {
     const shareData = {
-      title: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
-      text: `"${verse.text}" — ${verse.bookName} ${verse.chapter}:${verse.verse} (Alkitab TB)`,
+      title: `${bookDisplayName} ${verse.chapter}:${verse.verse}`,
+      text: `"${verseText}" — ${bookDisplayName} ${verse.chapter}:${verse.verse} (${translationTag})`,
     };
     if (navigator.share) {
       navigator.share(shareData).catch(() => {});
@@ -52,11 +60,11 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
   };
 
   const highlightColors: { color: HighlightColor; bg: string; border: string; name: string }[] = [
-    { color: 'amber', bg: 'bg-amber-300', border: 'border-amber-400', name: 'Kuning' },
-    { color: 'emerald', bg: 'bg-emerald-300', border: 'border-emerald-400', name: 'Hijau' },
-    { color: 'sky', bg: 'bg-sky-300', border: 'border-sky-400', name: 'Biru' },
-    { color: 'rose', bg: 'bg-rose-300', border: 'border-rose-400', name: 'Mawar' },
-    { color: 'purple', bg: 'bg-purple-300', border: 'border-purple-400', name: 'Ungu' },
+    { color: 'amber', bg: 'bg-amber-300', border: 'border-amber-400', name: isEn ? 'Yellow' : 'Kuning' },
+    { color: 'emerald', bg: 'bg-emerald-300', border: 'border-emerald-400', name: isEn ? 'Green' : 'Hijau' },
+    { color: 'sky', bg: 'bg-sky-300', border: 'border-sky-400', name: isEn ? 'Blue' : 'Biru' },
+    { color: 'rose', bg: 'bg-rose-300', border: 'border-rose-400', name: isEn ? 'Rose' : 'Mawar' },
+    { color: 'purple', bg: 'bg-purple-300', border: 'border-purple-400', name: isEn ? 'Purple' : 'Ungu' },
   ];
 
   return (
@@ -69,10 +77,10 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/70">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-xs tracking-wide">
-              Ayat Terpilih
+              {isEn ? 'Selected Verse' : 'Ayat Terpilih'}
             </span>
             <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-base">
-              {verse.bookName} {verse.chapter}:{verse.verse}
+              {bookDisplayName} {verse.chapter}:{verse.verse}
             </h3>
           </div>
           <button
@@ -87,7 +95,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
         {/* Verse Excerpt Preview */}
         <div className="p-5 bg-amber-50/30 dark:bg-amber-950/10 border-b border-neutral-100 dark:border-neutral-800 max-h-32 overflow-y-auto">
           <p className="font-serif-bible text-base text-neutral-800 dark:text-neutral-200 italic leading-relaxed">
-            "{verse.text}"
+            "{verseText}"
           </p>
         </div>
 
@@ -96,7 +104,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
           {/* Color Highlighting Row */}
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-2">
-              Beri Warna Sorotan (Highlight)
+              {isEn ? 'Highlight Color' : 'Beri Warna Sorotan (Highlight)'}
             </div>
             <div className="flex items-center gap-3">
               {highlightColors.map((h) => {
@@ -125,7 +133,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
                   onClick={() => onSetHighlight(null)}
                   className="px-3 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700"
                 >
-                  Hapus
+                  {isEn ? 'Remove' : 'Hapus'}
                 </button>
               )}
             </div>
@@ -145,7 +153,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
             >
               <BookmarkIcon className={`w-5 h-5 ${isBookmarked ? 'fill-amber-500 text-amber-500' : ''}`} />
               <span className="text-xs font-semibold">
-                {isBookmarked ? 'Ditandai' : 'Bookmark'}
+                {isBookmarked ? (isEn ? 'Bookmarked' : 'Ditandai') : (isEn ? 'Bookmark' : 'Bookmark')}
               </span>
             </button>
 
@@ -159,7 +167,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
               className="p-3 rounded-2xl border bg-neutral-50 dark:bg-neutral-800/80 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex flex-col items-center justify-center gap-1.5 transition-all text-center"
             >
               <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-xs font-semibold">Tulis Catatan</span>
+              <span className="text-xs font-semibold">{isEn ? 'Write Note' : 'Tulis Catatan'}</span>
             </button>
 
             {/* 3. Baca Suara (TTS) */}
@@ -172,10 +180,10 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
               className="p-3 rounded-2xl border bg-neutral-50 dark:bg-neutral-800/80 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex flex-col items-center justify-center gap-1.5 transition-all text-center"
             >
               <Volume2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-semibold">Dengar Suara</span>
+              <span className="text-xs font-semibold">{isEn ? 'Listen' : 'Dengar Suara'}</span>
             </button>
 
-            {/* 4. Salin / Bagikan */}
+            {/* 4. Salin */}
             <button
               id="action-copy-verse-btn"
               onClick={handleCopy}
@@ -184,12 +192,12 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
               {copied ? (
                 <>
                   <Check className="w-5 h-5 text-emerald-600" />
-                  <span className="text-xs font-semibold text-emerald-600">Tersalin!</span>
+                  <span className="text-xs font-semibold text-emerald-600">{isEn ? 'Copied!' : 'Tersalin!'}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-semibold">Salin Ayat</span>
+                  <span className="text-xs font-semibold">{isEn ? 'Copy' : 'Salin Ayat'}</span>
                 </>
               )}
             </button>
@@ -202,7 +210,7 @@ export const VerseActionDrawer: React.FC<VerseActionDrawerProps> = ({
             className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
           >
             <Share2 className="w-4 h-4" />
-            <span>Bagikan Firman (WhatsApp / Media Sosial)</span>
+            <span>{isEn ? 'Share Scripture (WhatsApp / Social Media)' : 'Bagikan Firman (WhatsApp / Media Sosial)'}</span>
           </button>
         </div>
       </div>

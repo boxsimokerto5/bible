@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronDown, Search, Type, Volume2, BookOpen, Sparkles, User } from 'lucide-react';
-import { Book, UserProfile } from '../types';
+import { ChevronDown, Search, Type, Volume2, BookOpen, User, Languages } from 'lucide-react';
+import { Book, UserProfile, Language } from '../types';
 import { CrossLogo } from './CrossLogo';
+import { getBookName } from '../data/books';
 
 interface HeaderProps {
   currentBook: Book;
@@ -16,6 +17,8 @@ interface HeaderProps {
   currentUser?: UserProfile | null;
   onOpenProfile: () => void;
   onOpenAuth: () => void;
+  language?: Language;
+  onToggleLanguage?: (lang: Language) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,11 +34,14 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenProfile,
   onOpenAuth,
+  language = 'id',
+  onToggleLanguage,
 }) => {
   const isVintage = theme === 'vintage';
+  const isEn = language === 'en';
   const [showChristmasAtmosphere, setShowChristmasAtmosphere] = useState(true);
 
-  // 12 subtle falling snowflakes with staggered positions and delays
+  // 9 subtle falling snowflakes with staggered positions and delays
   const snowflakes = [
     { id: 1, left: '6%', delay: '0s', duration: '5.2s', size: 'text-[9px]', opacity: 'opacity-70' },
     { id: 2, left: '14%', delay: '1.8s', duration: '6.5s', size: 'text-[12px]', opacity: 'opacity-50' },
@@ -48,6 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 9, left: '94%', delay: '1.4s', duration: '5.4s', size: 'text-[9px]', opacity: 'opacity-70' },
   ];
 
+  const bookDisplayName = getBookName(currentBook, language);
+
   return (
     <header className={`sticky top-0 z-30 backdrop-blur-md transition-colors relative overflow-hidden ${
       isVintage
@@ -57,7 +65,6 @@ export const Header: React.FC<HeaderProps> = ({
       {/* --- CHRISTMAS FAIRY LIGHTS & GARLAND TRIM ON TOP --- */}
       {showChristmasAtmosphere && (
         <div className="absolute top-0 left-0 right-0 h-1.5 flex items-center justify-between px-3 z-10 pointer-events-none overflow-hidden">
-          {/* Subtle string of twinkling Christmas lights */}
           <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] fairy-light-1" />
           <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] fairy-light-2" />
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] fairy-light-3" />
@@ -94,119 +101,154 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between gap-2 relative z-10">
-        {/* Left: Christian Cross / Bethlehem Star & Book-Chapter Selector */}
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2 relative z-10">
+        {/* Left: Christian Cross Logo & Book-Chapter Selector */}
         {activeTab === 'read' ? (
-          <div className="flex items-center gap-2">
-            {/* Elegant Golden Cross Logo Icon */}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            {/* Golden Cross Logo Icon */}
             <div 
               className="cursor-pointer transition-transform active:scale-90 hover:scale-105 shrink-0"
-              title="Salib Kristus • Damai Sejahtera Allah"
+              title={isEn ? "Cross of Christ • Peace of God" : "Salib Kristus • Damai Sejahtera Allah"}
               onClick={() => setShowChristmasAtmosphere(!showChristmasAtmosphere)}
             >
-              <CrossLogo className="w-8 h-8" />
+              <CrossLogo className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
 
             <button
               id="header-book-picker-btn"
               onClick={onOpenBookPicker}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl active:scale-95 transition-all border ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-2xl active:scale-95 transition-all border shrink min-w-0 truncate ${
                 isVintage
                   ? 'bg-[#dfcbab] text-[#2c1a0e] border-[#c9b28b] font-cinzel hover:bg-[#d5bf9b]'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300 border-neutral-200/60 dark:border-neutral-700/60'
               }`}
-              title="Pilih Kitab dan Pasal"
+              title={isEn ? "Select Book and Chapter" : "Pilih Kitab dan Pasal"}
             >
-              <BookOpen className={`w-4 h-4 ${isVintage ? 'text-[#8c2514]' : 'text-amber-600 dark:text-amber-400'}`} />
-              <span className="font-extrabold text-base tracking-tight">
-                {currentBook.name} {currentChapter}
+              <BookOpen className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isVintage ? 'text-[#8c2514]' : 'text-amber-600 dark:text-amber-400'}`} />
+              <span className="font-extrabold text-xs sm:text-base tracking-tight truncate">
+                {bookDisplayName} {currentChapter}
               </span>
-              <ChevronDown className="w-4 h-4 opacity-60" />
+              <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-60 shrink-0" />
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5">
-            {/* Elegant Golden Cross Logo */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <div 
               onClick={() => setShowChristmasAtmosphere(!showChristmasAtmosphere)}
               className="cursor-pointer transition-transform active:scale-90 hover:scale-105 shrink-0"
-              title="Salib Kristus • Damai Sejahtera Allah"
+              title={isEn ? "Cross of Christ • Peace of God" : "Salib Kristus • Damai Sejahtera Allah"}
             >
-              <CrossLogo className="w-8 h-8" />
+              <CrossLogo className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className={`font-extrabold text-base tracking-tight ${
+                <h1 className={`font-extrabold text-xs sm:text-base tracking-tight truncate ${
                   isVintage ? 'font-cinzel text-[#2c1a0e]' : 'text-neutral-900 dark:text-neutral-100'
                 }`}>
-                  {activeTab === 'stories' ? 'Kisah & Kesaksian' : 
-                   activeTab === 'devotional' ? 'Renungan Harian' :
-                   activeTab === 'notes' ? 'Catatan Khotbah' :
-                   activeTab === 'bookmarks' ? 'Bookmark & Stabilo' :
-                   activeTab === 'search' ? 'Cari Firman' : 'Alkitab Digital'}
+                  {activeTab === 'stories' 
+                    ? (isEn ? 'Stories & Faith' : 'Kisah & Kesaksian')
+                    : activeTab === 'devotional' 
+                    ? (isEn ? 'Daily Devotion' : 'Renungan Harian')
+                    : activeTab === 'notes' 
+                    ? (isEn ? 'Sermon Notes' : 'Catatan Khotbah')
+                    : activeTab === 'bookmarks' 
+                    ? (isEn ? 'Bookmarks' : 'Bookmark & Stabilo')
+                    : activeTab === 'search' 
+                    ? (isEn ? 'Search Scripture' : 'Cari Firman')
+                    : (isEn ? 'Holy Bible' : 'Alkitab Digital')}
                 </h1>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-600/15 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-600/25 hidden sm:inline-flex items-center gap-0.5">
+                <span className="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-600/15 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-600/25 hidden md:inline-flex items-center gap-0.5 shrink-0">
                   <span>🎄</span> Natal
                 </span>
               </div>
-              <p className={`text-[10px] hidden xs:block -mt-0.5 ${isVintage ? 'text-[#7a5b3a] font-garamond italic' : 'text-neutral-400 dark:text-neutral-500'}`}>
-                {activeTab === 'stories' ? 'Kasih Kristus & Teladan Iman' : 'Immanuel • Allah Beserta Kita'}
+              <p className={`text-[9px] sm:text-[10px] hidden xs:block -mt-0.5 truncate ${isVintage ? 'text-[#7a5b3a] font-garamond italic' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                {activeTab === 'stories' 
+                  ? (isEn ? 'Love of Christ & Testimonies' : 'Kasih Kristus & Teladan Iman') 
+                  : (isEn ? 'Emmanuel • God With Us' : 'Immanuel • Allah Beserta Kita')}
               </p>
             </div>
           </div>
         )}
 
-        {/* Right Tools */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* Christmas atmosphere toggle button */}
-          <button
-            onClick={() => setShowChristmasAtmosphere(!showChristmasAtmosphere)}
-            className={`p-2 rounded-xl text-xs transition-all flex items-center gap-1 ${
-              showChristmasAtmosphere
-                ? isVintage
-                  ? 'bg-[#dfcbab] text-[#8c2514] border border-[#c9b28b]'
-                  : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30'
-                : 'text-neutral-400 hover:text-neutral-600 opacity-60'
+        {/* Right Tools & Language Switcher */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* USER REQUEST: Clean & Neat IND-ENG Language Toggle Switch */}
+          <div 
+            id="header-language-toggle-wrapper"
+            className={`flex items-center p-0.5 rounded-xl border text-[10px] sm:text-xs font-black transition-all ${
+              isVintage
+                ? 'bg-[#dfcbab]/80 border-[#c9b28b]'
+                : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200/80 dark:border-neutral-700'
             }`}
-            title={showChristmasAtmosphere ? "Animasi Natal Aktif (Klik untuk nonaktifkan)" : "Aktifkan Animasi Natal"}
+            title={isEn ? "Switch language: Indonesian / English" : "Ganti bahasa: Indonesia / Inggris"}
           >
-            <span className="text-xs animate-bethlehem-star">⭐</span>
-            <span className="text-[11px] font-bold hidden md:inline">
-              {showChristmasAtmosphere ? 'Natal' : 'Natal'}
-            </span>
-          </button>
+            <button
+              id="lang-toggle-ind-btn"
+              type="button"
+              onClick={() => onToggleLanguage?.('id')}
+              className={`px-1.5 sm:px-2 py-0.5 rounded-lg transition-all text-[10px] sm:text-[11px] font-extrabold ${
+                language === 'id'
+                  ? isVintage
+                    ? 'bg-[#8c2514] text-white shadow-2xs'
+                    : 'bg-amber-600 text-white shadow-2xs'
+                  : isVintage
+                    ? 'text-[#5a3b22] hover:text-[#8c2514]'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+              title="Bahasa Indonesia (Terjemahan Baru)"
+            >
+              IND
+            </button>
+            <button
+              id="lang-toggle-eng-btn"
+              type="button"
+              onClick={() => onToggleLanguage?.('en')}
+              className={`px-1.5 sm:px-2 py-0.5 rounded-lg transition-all text-[10px] sm:text-[11px] font-extrabold ${
+                language === 'en'
+                  ? isVintage
+                    ? 'bg-[#8c2514] text-white shadow-2xs'
+                    : 'bg-amber-600 text-white shadow-2xs'
+                  : isVintage
+                    ? 'text-[#5a3b22] hover:text-[#8c2514]'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+              title="English (KJV / WEB Translation)"
+            >
+              ENG
+            </button>
+          </div>
 
+          {/* Audio narration button (in read mode) */}
           {activeTab === 'read' && (
             <>
-              {/* Text to Speech Narration */}
               <button
                 id="header-audio-narration-btn"
                 onClick={onStartAudio}
-                className={`p-2.5 rounded-xl transition-all ${
+                className={`p-1.5 sm:p-2 rounded-xl transition-all ${
                   isPlayingAudio
                     ? isVintage ? 'bg-[#8c2514] text-white animate-pulse' : 'bg-amber-500 text-white animate-pulse'
                     : isVintage 
                     ? 'text-[#4a301a] hover:bg-[#dfcbab]' 
                     : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
-                title="Dengarkan Suara Pembacaan Firman"
+                title={isEn ? "Listen to Bible audio recitation" : "Dengarkan Suara Pembacaan Firman"}
               >
-                <Volume2 className="w-5 h-5" />
+                <Volume2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
 
               {/* Display & Font Sizing (Aa) */}
               <button
                 id="header-font-settings-btn"
                 onClick={onOpenSettings}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl transition-all font-bold text-sm ${
+                className={`flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl transition-all font-bold text-sm ${
                   isVintage
                     ? 'text-[#2c1a0e] hover:bg-[#dfcbab]'
                     : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
-                title="Pengaturan Ukuran Huruf & Warna"
+                title={isEn ? "Reading Settings (Font & Theme)" : "Pengaturan Ukuran Huruf & Warna"}
               >
                 <Type className={`w-4 h-4 ${isVintage ? 'text-[#8c2514]' : 'text-amber-600 dark:text-amber-400'}`} />
-                <span className="text-xs hidden sm:inline">Ukuran Teks</span>
+                <span className="text-xs hidden md:inline">{isEn ? 'Size' : 'Teks'}</span>
               </button>
             </>
           )}
@@ -215,14 +257,14 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-search-btn"
             onClick={onOpenSearch}
-            className={`p-2 sm:p-2.5 rounded-xl transition-all ${
+            className={`p-1.5 sm:p-2 rounded-xl transition-all ${
               isVintage
                 ? 'text-[#4a301a] hover:bg-[#dfcbab]'
                 : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
             }`}
-            title="Cari Ayat atau Kata"
+            title={isEn ? "Search Scripture" : "Cari Ayat atau Kata"}
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
           {/* User Account / Profile Button */}
@@ -230,17 +272,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-user-profile-btn"
               onClick={onOpenProfile}
-              className={`flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl transition-all border ${
+              className={`flex items-center gap-1 p-1 sm:px-2 sm:py-1 rounded-xl transition-all border ${
                 isVintage
                   ? 'bg-[#dfcbab] text-[#2c1a0e] border-[#c9b28b] hover:bg-[#d5bf9b]'
                   : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200/80 dark:border-neutral-700 hover:border-amber-500/50'
               }`}
-              title={`Akun: ${currentUser.name}`}
+              title={isEn ? `Account: ${currentUser.name}` : `Akun: ${currentUser.name}`}
             >
-              <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0">
                 {currentUser.avatarEmoji || '🕊️'}
               </div>
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 hidden md:inline truncate max-w-[80px]">
+              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 hidden lg:inline truncate max-w-[65px]">
                 {currentUser.name.split(' ')[0]}
               </span>
             </button>
@@ -248,11 +290,11 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-auth-btn"
               onClick={onOpenAuth}
-              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0"
-              title="Masuk atau Buat Akun Alkitab"
+              className="px-2 sm:px-2.5 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] sm:text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0"
+              title={isEn ? "Sign in or Create Account" : "Masuk atau Buat Akun Alkitab"}
             >
-              <User className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Masuk</span>
+              <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">{isEn ? 'Sign In' : 'Masuk'}</span>
             </button>
           )}
         </div>
@@ -260,4 +302,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BIBLE_BOOKS } from './data/books';
+import { BIBLE_BOOKS, getBookName } from './data/books';
 import { getVersesForChapter } from './data/bibleVerses';
 import { BibleService } from './data/bibleService';
 import { 
@@ -111,9 +111,9 @@ export default function App() {
     }
   }, [settings.theme]);
 
-  // Load verses when book or chapter changes
+  // Load verses when book, chapter, or language changes
   useEffect(() => {
-    const loadedVerses = getVersesForChapter(currentBookId, currentChapter);
+    const loadedVerses = getVersesForChapter(currentBookId, currentChapter, settings.language);
     setVerses(loadedVerses);
     BibleService.saveLastRead(currentBookId, currentChapter);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -122,7 +122,7 @@ export default function App() {
     if (isAudioActiveRef.current) {
       stopAudio();
     }
-  }, [currentBookId, currentChapter]);
+  }, [currentBookId, currentChapter, settings.language]);
 
   // Get current Book object
   const currentBook = BIBLE_BOOKS.find(b => b.id === currentBookId) || BIBLE_BOOKS[39]; // Default Yohanes
@@ -341,16 +341,25 @@ export default function App() {
     setAudioVerseIndex(index);
     setSpeakingVerseId(v.id);
 
-    const utteranceText = `Ayat ${v.verse}. ${v.text}`;
+    const isEn = settings.language === 'en';
+    const verseContent = isEn && v.textEn ? v.textEn : v.text;
+    const utteranceText = isEn ? `Verse ${v.verse}. ${verseContent}` : `Ayat ${v.verse}. ${verseContent}`;
     const utterance = new SpeechSynthesisUtterance(utteranceText);
-    utterance.lang = 'id-ID';
+    utterance.lang = isEn ? 'en-US' : 'id-ID';
     utterance.rate = settings.audioSpeed || 1.0;
 
-    // Pick Indonesian voice if available
+    // Pick appropriate voice (English or Indonesian)
     const voices = window.speechSynthesis.getVoices();
-    const indonesianVoice = voices.find(voice => voice.lang.includes('id') || voice.lang.includes('ID'));
-    if (indonesianVoice) {
-      utterance.voice = indonesianVoice;
+    if (isEn) {
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+    } else {
+      const indonesianVoice = voices.find(voice => voice.lang.includes('id') || voice.lang.includes('ID'));
+      if (indonesianVoice) {
+        utterance.voice = indonesianVoice;
+      }
     }
 
     utterance.onend = () => {
@@ -382,9 +391,24 @@ export default function App() {
   const startSingleVerseAudio = (verseText: string, title: string) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
+    const isEn = settings.language === 'en';
     const utterance = new SpeechSynthesisUtterance(`${title}. ${verseText}`);
-    utterance.lang = 'id-ID';
+    utterance.lang = isEn ? 'en-US' : 'id-ID';
     utterance.rate = settings.audioSpeed || 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (isEn) {
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+    } else {
+      const indonesianVoice = voices.find(voice => voice.lang.includes('id') || voice.lang.includes('ID'));
+      if (indonesianVoice) {
+        utterance.voice = indonesianVoice;
+      }
+    }
+
     window.speechSynthesis.speak(utterance);
     setIsPlayingAudio(true);
   };
@@ -459,6 +483,8 @@ export default function App() {
         currentUser={currentUser}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
+        language={settings.language || 'id'}
+        onToggleLanguage={(lang) => handleUpdateSettings({ language: lang })}
       />
 
       {/* Main Tab Content */}
@@ -485,7 +511,10 @@ export default function App() {
         )}
 
         {activeTab === 'search' && (
-          <SearchView onNavigateToVerse={handleNavigateToVerse} />
+          <SearchView 
+            onNavigateToVerse={handleNavigateToVerse} 
+            language={settings.language || 'id'} 
+          />
         )}
 
         {activeTab === 'bookmarks' && (
@@ -544,7 +573,7 @@ export default function App() {
         isPlaying={isPlayingAudio}
         isPaused={isAudioPaused}
         currentVerse={audioQueueRef.current[audioVerseIndex] || null}
-        chapterTitle={`${currentBook.name} ${currentChapter}`}
+        chapterTitle={`${getBookName(currentBook, settings.language || 'id')} ${currentChapter}`}
         speed={settings.audioSpeed || 1.0}
         onPlay={() => startChapterAudio(audioVerseIndex)}
         onPause={pauseAudio}
@@ -553,6 +582,7 @@ export default function App() {
         onNext={nextAudioVerse}
         onPrev={prevAudioVerse}
         onChangeSpeed={changeAudioSpeed}
+        language={settings.language || 'id'}
       />
 
       {/* Bottom Android Navigation */}
@@ -565,6 +595,7 @@ export default function App() {
         bookmarksCount={bookmarks.length}
         notesCount={notes.length}
         theme={settings.theme}
+        language={settings.language || 'id'}
       />
 
       {/* Modals and Drawers */}
@@ -640,6 +671,7 @@ export default function App() {
           setCurrentChapter(ch);
           setActiveTab('read');
         }}
+        language={settings.language || 'id'}
       />
 
       <SettingsModal
@@ -687,6 +719,7 @@ export default function App() {
             startChapterAudio(index >= 0 ? index : 0);
           }
         }}
+        language={settings.language || 'id'}
       />
 
       <NoteEditorModal

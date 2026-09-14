@@ -1,4 +1,4 @@
-import { Bookmark, Highlight, Note, ReadingSettings, Verse, Book, UserPersonalTestimony, ReadingHistoryItem } from '../types';
+import { Bookmark, Highlight, Note, ReadingSettings, Verse, Book, UserPersonalTestimony, ReadingHistoryItem, Language } from '../types';
 import { BIBLE_BOOKS } from './books';
 import { AUTHENTIC_PASSAGES, getVersesForChapter } from './bibleVerses';
 import { SupabaseService, isSupabaseConnected } from '../lib/supabase';
@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: ReadingSettings = {
   showVerseNumbers: true,
   autoScroll: false,
   audioSpeed: 1.0,
+  language: 'id',
 };
 
 // Initial sample bookmarks and notes so user immediately sees rich, clean UI
@@ -529,11 +530,12 @@ export const BibleService = {
   },
 
   // --- SEARCH ENGINE ---
-  search(query: string, testamentFilter: 'ALL' | 'PL' | 'PB' = 'ALL'): Verse[] {
+  search(query: string, testamentFilter: 'ALL' | 'PL' | 'PB' = 'ALL', lang?: Language): Verse[] {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return [];
+    const activeLang = lang || this.getSettings().language || 'id';
 
-    // Check if query is a direct reference like "yoh 3:16", "kejadian 1:1", "mzm 23"
+    // Check if query is a direct reference like "yoh 3:16", "john 3:16", "kejadian 1:1", "mzm 23", "psalm 23"
     const refMatch = trimmed.match(/^([0-9a-zA-Z\s]+?)\s*([0-9]+)(?:\s*[:,\.]\s*([0-9]+))?$/i);
     if (refMatch) {
       const inputBook = refMatch[1].trim().toLowerCase();
@@ -543,12 +545,15 @@ export const BibleService = {
       const targetBook = BIBLE_BOOKS.find(b => 
         b.name.toLowerCase() === inputBook ||
         b.shortName.toLowerCase() === inputBook ||
+        (b.nameEn && b.nameEn.toLowerCase() === inputBook) ||
+        (b.shortNameEn && b.shortNameEn.toLowerCase() === inputBook) ||
         b.id.toLowerCase() === inputBook ||
-        b.name.toLowerCase().startsWith(inputBook)
+        b.name.toLowerCase().startsWith(inputBook) ||
+        (b.nameEn && b.nameEn.toLowerCase().startsWith(inputBook))
       );
 
       if (targetBook && inputChapter > 0 && inputChapter <= targetBook.chaptersCount) {
-        const chapterVerses = getVersesForChapter(targetBook.id, inputChapter);
+        const chapterVerses = getVersesForChapter(targetBook.id, inputChapter, activeLang);
         if (inputVerse) {
           const specific = chapterVerses.filter(v => v.verse === inputVerse);
           if (specific.length > 0) return specific;
@@ -571,7 +576,7 @@ export const BibleService = {
 
       if (testamentFilter !== 'ALL' && book.testament !== testamentFilter) continue;
 
-      const verses = getVersesForChapter(bookId, chap);
+      const verses = getVersesForChapter(bookId, chap, activeLang);
       for (const v of verses) {
         const textLower = v.text.toLowerCase();
         const matches = keywords.every(kw => textLower.includes(kw));
@@ -592,7 +597,7 @@ export const BibleService = {
           const key = `${book.id}-${ch}`;
           if (AUTHENTIC_PASSAGES[key]) continue; // already checked
 
-          const verses = getVersesForChapter(book.id, ch);
+          const verses = getVersesForChapter(book.id, ch, activeLang);
           for (const v of verses) {
             const textLower = v.text.toLowerCase();
             const matches = keywords.every(kw => textLower.includes(kw));

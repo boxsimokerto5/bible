@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Type, Sun, Moon, Coffee, Eye, Minus, Plus, AlignLeft, Check, Sparkles, User, ShieldCheck, Download, Database } from 'lucide-react';
+import { X, Type, Sun, Moon, Coffee, Eye, Minus, Plus, AlignLeft, Check, Sparkles, User, ShieldCheck, Download, Database, Languages } from 'lucide-react';
 import { ReadingSettings, ThemeMode, FontFamilyType, LineHeightType, UserProfile } from '../types';
 import { isSupabaseConnected } from '../lib/supabase';
 
@@ -70,6 +70,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Settings Body */}
         <div className="p-6 space-y-6 overflow-y-auto">
+          {/* 0. Language Selection (Pilihan Bahasa: Indonesia - English) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                <Languages className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>{settings.language === 'en' ? 'Scripture Language / Translation:' : 'Bahasa Terjemahan Alkitab:'}</span>
+              </label>
+              <span className="text-xs text-neutral-500 font-medium">
+                {settings.language === 'en' ? 'Global (176 Countries)' : 'Bahasa Indonesia'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                id="settings-lang-id-btn"
+                type="button"
+                onClick={() => onUpdateSettings({ language: 'id' })}
+                className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center justify-between ${
+                  (settings.language || 'id') === 'id'
+                    ? 'border-amber-600 bg-amber-500/10 text-amber-950 dark:text-amber-100 font-bold ring-1 ring-amber-600 shadow-xs'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <span>🇮🇩 Indonesia</span>
+                  </div>
+                  <div className="text-[11px] text-neutral-500 font-normal mt-0.5">Terjemahan Baru (TB)</div>
+                </div>
+                {(settings.language || 'id') === 'id' && <Check className="w-4 h-4 text-amber-600 shrink-0" />}
+              </button>
+
+              <button
+                id="settings-lang-en-btn"
+                type="button"
+                onClick={() => onUpdateSettings({ language: 'en' })}
+                className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center justify-between ${
+                  settings.language === 'en'
+                    ? 'border-amber-600 bg-amber-500/10 text-amber-950 dark:text-amber-100 font-bold ring-1 ring-amber-600 shadow-xs'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <span>🌐 English</span>
+                  </div>
+                  <div className="text-[11px] text-neutral-500 font-normal mt-0.5">KJV / WEB Translation</div>
+                </div>
+                {settings.language === 'en' && <Check className="w-4 h-4 text-amber-600 shrink-0" />}
+              </button>
+            </div>
+          </div>
+
           {/* 1. Font Size (Ukuran Teks) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

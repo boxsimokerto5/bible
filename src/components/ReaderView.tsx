@@ -4,6 +4,8 @@ import {
   FileText, Plus, Minus, Volume2 
 } from 'lucide-react';
 import { Book, Verse, ReadingSettings, Bookmark, Highlight, Note } from '../types';
+import { getBookName, getBookCategory } from '../data/books';
+import { getTranslation } from '../data/translations';
 
 interface ReaderViewProps {
   currentBook: Book;
@@ -101,6 +103,13 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     }
   };
 
+  const t = getTranslation(settings.language || 'id');
+  const bookDisplayName = getBookName(currentBook, settings.language);
+  const bookCategoryName = getBookCategory(currentBook, settings.language);
+  const testamentBadge = settings.language === 'en'
+    ? (currentBook.testament === 'PB' ? 'NT' : 'OT')
+    : (currentBook.testament === 'PB' ? 'PB' : 'PL');
+
   return (
     <div className={`relative pb-24 pt-1 ${isVintage ? 'vintage-book-edge' : ''}`}>
       {/* Chapter Title & Header banner - Compact & Slim for Phone */}
@@ -119,7 +128,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                 : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
             }`}
           >
-            <span>{currentBook.category}</span> • <span>{currentBook.testament === 'PB' ? 'PB' : 'PL'}</span>
+            <span>{bookCategoryName}</span> • <span>{testamentBadge}</span>
           </button>
 
           {/* Inline Chapter Title */}
@@ -128,7 +137,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               ? 'font-cinzel text-[#2c1a0e]' 
               : 'text-neutral-900 dark:text-neutral-50'
           }`}>
-            {currentBook.name} {currentChapter}
+            {bookDisplayName} {currentChapter}
           </h2>
 
           {/* Quick Font Size Controls Inline */}
@@ -141,7 +150,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               id="quick-font-decrease"
               onClick={() => onUpdateFontSize(-2)}
               className="w-5 h-5 rounded-full flex items-center justify-center hover:opacity-75 active:scale-90"
-              title="Kecilkan Huruf"
+              title={t.fontDecrease}
             >
               <Minus className="w-3 h-3" />
             </button>
@@ -152,7 +161,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               id="quick-font-increase"
               onClick={() => onUpdateFontSize(2)}
               className="w-5 h-5 rounded-full flex items-center justify-center hover:opacity-75 active:scale-90"
-              title="Besarkan Huruf"
+              title={t.fontIncrease}
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -217,14 +226,14 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                 {/* Verse Text */}
                 <div className={`flex-1 min-w-0 ${isVintage ? 'text-[#2c1a0e]' : ''}`}>
                   <span className={`${highlight ? getHighlightStyles(highlight.color) : ''}`}>
-                    {verse.text}
+                    {settings.language === 'en' && verse.textEn ? verse.textEn : verse.text}
                   </span>
 
                   {/* Indicator Badges (Bookmark star, Note badge) */}
                   {(bookmarked || noteCount > 0) && (
                     <span className="inline-flex items-center gap-1.5 ml-2 align-middle select-none">
                       {bookmarked && (
-                        <span className={`inline-flex items-center ${isVintage ? 'text-[#8c2514]' : 'text-amber-500'}`} title="Ayat ditandai">
+                        <span className={`inline-flex items-center ${isVintage ? 'text-[#8c2514]' : 'text-amber-500'}`} title={t.bookmark}>
                           <BookmarkIcon className={`w-3.5 h-3.5 ${isVintage ? 'fill-[#8c2514]' : 'fill-amber-500'}`} />
                         </span>
                       )}
@@ -233,7 +242,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                           isVintage
                             ? 'bg-[#8c2514]/15 text-[#8c2514] border border-[#8c2514]/30'
                             : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
-                        }`} title={`${noteCount} Catatan pribadi`}>
+                        }`} title={`${noteCount} ${t.notes}`}>
                           <FileText className="w-3 h-3" />
                           <span>{noteCount}</span>
                         </span>
@@ -264,7 +273,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           }`}
         >
           <ChevronLeft className="w-5 h-5" />
-          <span>Pasal Sebelumnya</span>
+          <span>{t.prevChapter}</span>
         </button>
 
         <button
@@ -279,7 +288,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               : 'opacity-40 cursor-not-allowed bg-neutral-100 dark:bg-neutral-900 border-transparent text-neutral-400'
           }`}
         >
-          <span>Pasal Selanjutnya</span>
+          <span>{t.nextChapter}</span>
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Search, Bookmark, FileText, Sparkles, Heart } from 'lucide-react';
-import { TabType } from '../types';
+import { TabType, Language } from '../types';
+import { getTranslation } from '../data/translations';
 
 interface BottomNavProps {
   activeTab: TabType;
@@ -8,6 +9,7 @@ interface BottomNavProps {
   bookmarksCount: number;
   notesCount: number;
   theme?: string;
+  language?: Language;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -16,16 +18,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   bookmarksCount,
   notesCount,
   theme,
+  language = 'id',
 }) => {
   const isVintage = theme === 'vintage';
+  const t = getTranslation(language);
 
   const tabs = [
-    { id: 'read' as TabType, label: 'Alkitab', icon: BookOpen },
-    { id: 'devotional' as TabType, label: 'Renungan', icon: Sparkles },
-    { id: 'stories' as TabType, label: 'Kisah', icon: Heart },
-    { id: 'notes' as TabType, label: 'Catatan', icon: FileText, badge: notesCount },
-    { id: 'bookmarks' as TabType, label: 'Bookmark', icon: Bookmark, badge: bookmarksCount },
-    { id: 'search' as TabType, label: 'Cari', icon: Search },
+    { id: 'read' as TabType, label: t.bible, icon: BookOpen },
+    { id: 'devotional' as TabType, label: t.devotional, icon: Sparkles },
+    { id: 'stories' as TabType, label: t.stories, icon: Heart },
+    { id: 'notes' as TabType, label: t.notes, icon: FileText, badge: notesCount },
+    { id: 'bookmarks' as TabType, label: t.bookmark, icon: Bookmark, badge: bookmarksCount },
+    { id: 'search' as TabType, label: t.search, icon: Search },
   ];
 
   return (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play, Pause, Square, SkipBack, SkipForward, Volume2, X, Gauge } from 'lucide-react';
-import { Verse } from '../types';
+import { Verse, Language } from '../types';
+import { getBookNameById } from '../data/books';
 
 interface AudioPlayerBarProps {
   isPlaying: boolean;
@@ -15,6 +16,7 @@ interface AudioPlayerBarProps {
   onNext: () => void;
   onPrev: () => void;
   onChangeSpeed: (speed: number) => void;
+  language?: Language;
 }
 
 export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
@@ -30,9 +32,11 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onNext,
   onPrev,
   onChangeSpeed,
+  language = 'id',
 }) => {
   if (!isPlaying && !isPaused && !currentVerse) return null;
 
+  const isEn = language === 'en';
   const speeds = [0.75, 1.0, 1.25, 1.5];
 
   const cycleSpeed = () => {
@@ -40,6 +44,9 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     const nextIndex = (currentIndex + 1) % speeds.length;
     onChangeSpeed(speeds[nextIndex]);
   };
+
+  const verseBookName = currentVerse ? (getBookNameById(currentVerse.bookId, language) || currentVerse.bookName) : '';
+  const verseText = currentVerse ? (isEn && currentVerse.textEn ? currentVerse.textEn : currentVerse.text) : (isEn ? 'Reciting Scripture...' : 'Membaca Kitab...');
 
   return (
     <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 z-40 max-w-xl mx-auto px-3 sm:px-4 animate-in slide-in-from-bottom-5 duration-200">
@@ -55,10 +62,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-amber-400 truncate">
-                {currentVerse ? `${currentVerse.bookName} ${currentVerse.chapter}:${currentVerse.verse}` : chapterTitle}
+                {currentVerse ? `${verseBookName} ${currentVerse.chapter}:${currentVerse.verse}` : chapterTitle}
               </div>
               <div className="text-[11px] text-neutral-300 truncate font-serif-bible">
-                {currentVerse?.text || 'Membaca Kitab...'}
+                {verseText}
               </div>
             </div>
           </div>
@@ -67,6 +74,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
             id="close-audio-player-btn"
             onClick={onStop}
             className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10"
+            title={isEn ? "Close Audio" : "Tutup Audio"}
           >
             <X className="w-4 h-4" />
           </button>
@@ -79,7 +87,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
             id="audio-speed-btn"
             onClick={cycleSpeed}
             className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-amber-300 flex items-center gap-1"
-            title="Kecepatan Baca"
+            title={isEn ? "Reading Speed" : "Kecepatan Baca"}
           >
             <Gauge className="w-3 h-3" />
             <span>{speed}x</span>
@@ -91,6 +99,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               id="audio-prev-verse-btn"
               onClick={onPrev}
               className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-300 hover:text-white active:scale-95"
+              title={isEn ? "Previous Verse" : "Ayat Sebelumnya"}
             >
               <SkipBack className="w-4 h-4" />
             </button>
@@ -100,6 +109,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                 id="audio-pause-btn"
                 onClick={onPause}
                 className="w-10 h-10 rounded-full bg-amber-500 text-neutral-950 flex items-center justify-center shadow-lg active:scale-95"
+                title={isEn ? "Pause" : "Jeda"}
               >
                 <Pause className="w-5 h-5 fill-neutral-950" />
               </button>
@@ -108,6 +118,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                 id="audio-play-btn"
                 onClick={isPaused ? onResume : onPlay}
                 className="w-10 h-10 rounded-full bg-amber-500 text-neutral-950 flex items-center justify-center shadow-lg active:scale-95"
+                title={isEn ? "Play" : "Putar"}
               >
                 <Play className="w-5 h-5 fill-neutral-950 ml-0.5" />
               </button>
@@ -117,6 +128,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               id="audio-stop-btn"
               onClick={onStop}
               className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-300 hover:text-white active:scale-95"
+              title={isEn ? "Stop" : "Berhenti"}
             >
               <Square className="w-4 h-4" />
             </button>
@@ -125,13 +137,14 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               id="audio-next-verse-btn"
               onClick={onNext}
               className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-300 hover:text-white active:scale-95"
+              title={isEn ? "Next Verse" : "Ayat Selanjutnya"}
             >
               <SkipForward className="w-4 h-4" />
             </button>
           </div>
 
           <div className="text-[11px] text-neutral-400 font-medium">
-            {isPlaying ? 'Memutar...' : 'Dijeda'}
+            {isPlaying ? (isEn ? 'Playing...' : 'Memutar...') : (isEn ? 'Paused' : 'Dijeda')}
           </div>
         </div>
       </div>

@@ -1,15 +1,19 @@
 export type Testament = 'PL' | 'PB'; // Perjanjian Lama / Perjanjian Baru
+export type Language = 'id' | 'en'; // Indonesia / English
 
 export type HighlightColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'purple';
 
 export interface Book {
   id: string; // e.g. "kej", "mat", "yoh"
   name: string; // e.g. "Kejadian", "Matius", "Yohanes"
+  nameEn?: string; // e.g. "Genesis", "Matthew", "John"
   shortName: string; // e.g. "Kej", "Mat", "Yoh"
+  shortNameEn?: string; // e.g. "Gen", "Matt", "John"
   testament: Testament;
   order: number; // 1 to 66
   chaptersCount: number;
   category: string; // e.g. "Taurat", "Sejarah", "Puisi", "Para Nabi", "Injil", "Surat", "Nubuat"
+  categoryEn?: string; // e.g. "Law", "History", "Poetry & Wisdom", "Gospels", "Epistles"
 }
 
 export interface Verse {
@@ -19,6 +23,7 @@ export interface Verse {
   chapter: number;
   verse: number;
   text: string;
+  textEn?: string;
 }
 
 export interface Bookmark {
@@ -68,6 +73,7 @@ export interface ReadingSettings {
   showVerseNumbers: boolean;
   autoScroll: boolean;
   audioSpeed: number;
+  language?: Language; // 'id' | 'en'
 }
 
 export interface DailyDevotional {
